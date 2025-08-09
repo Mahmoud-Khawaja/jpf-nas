@@ -116,7 +116,12 @@ tasks.register('modelJar', Jar) {
     dependsOn tasks.named('compileModelClasses')
     dependsOn tasks.named('compileJava')
     archiveBaseName = 'jpf-nas-classes'
+
     from("$buildDir/classes/modules")
+
+    from("$buildDir/classes/java/main") {
+        include "nas/java/net/**"
+    }
 
     from("$buildDir/classes/java/main") {
         include "nas/util/test/TestNasJPF.class"
@@ -129,6 +134,7 @@ tasks.register('modelJar', Jar) {
         )
     }
 }
+
 
 // --- Java Compile Options ---
 tasks.withType(JavaCompile).configureEach {
