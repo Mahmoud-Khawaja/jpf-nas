@@ -7,8 +7,8 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 repositories {
@@ -85,9 +85,9 @@ tasks.register('examplesJar', Jar) {
     }
 }
 
-// --- Model Classes Compilation ---
+// --- Model Classes Compilation (Java 8 compatible) ---
 tasks.register('compileModelClasses', Exec) {
-    def srcDir = file('src/classes/modules')
+    def srcDir = file('src/classes')
     def outDir = file("$buildDir/classes/modules")
     def javaHome = Jvm.current().javaHome
 
@@ -102,12 +102,10 @@ tasks.register('compileModelClasses', Exec) {
         delete outDir.listFiles()
     }
 
+    // Simple Java 8 compilation without module system flags
     commandLine = [
             "${javaHome}/bin/javac",
-            '--module-source-path', 'src/classes/modules',
-            '--patch-module', "java.base=${srcDir}/java.base",
-            '--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED',
-            '--add-exports', 'java.base/sun.net=ALL-UNNAMED',
+            '-cp', configurations.compileClasspath.asPath,
             '-d', outDir
     ] + javaFiles
 }
@@ -135,22 +133,10 @@ tasks.register('modelJar', Jar) {
     }
 }
 
-
-// --- Java Compile Options ---
+// --- Java Compile Options (Java 8 compatible) ---
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.compilerArgs += [
-            '--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED',
-            '--add-exports', 'java.base/sun.net=ALL-UNNAMED',
-            '--add-exports', 'java.base/sun.net.util=ALL-UNNAMED',
-            '--add-exports', 'java.base/jdk.internal.ref=ALL-UNNAMED',
-            '--add-exports', 'java.base/sun.net.ext=ALL-UNNAMED',
-            '--add-opens', 'java.base/jdk.internal.ref=ALL-UNNAMED',
-            '--add-exports', 'java.base/sun.net.www=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.net=ALL-UNNAMED',
-            '--add-opens', 'java.base/sun.net=ALL-UNNAMED'
-    ]
-
+    // Remove all Java 9+ module flags for Java 8 compatibility
 }
 
 test {
@@ -163,13 +149,7 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
-    jvmArgs = [
-            '--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED',
-            '--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.util=ALL-UNNAMED',
-            '--add-exports', 'java.base/sun.net.www.protocol.http=ALL-UNNAMED'
-    ]
+    // Remove all Java 9+ JVM args for Java 8 compatibility
     maxHeapSize = "1024m"
     forkEvery = 1
 }
