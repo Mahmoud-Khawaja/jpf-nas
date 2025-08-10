@@ -34,6 +34,15 @@ public class JPF_java_net_ServerSocket extends NativePeer {
     return host;
   }
 
+  @MJI
+  public void CheckForAddressAlreadyInUse__I__V (MJIEnv env, int serverSocketRef, int port) {
+    boolean inUse = connections.isAddressInUse(getServerHost(env, serverSocketRef), port);
+    if (inUse) {
+      env.throwException("java.net.BindException", "Address already in use");
+    }
+  }
+
+
   public int getServerPort (MJIEnv env, int serverSocketRef) {
     int implRef = env.getElementInfo(serverSocketRef).getReferenceField("impl");
     int port = env.getElementInfo(implRef).getIntField("localPort");

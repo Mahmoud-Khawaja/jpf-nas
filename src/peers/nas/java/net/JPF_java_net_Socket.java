@@ -44,25 +44,43 @@ public class JPF_java_net_Socket extends NativePeer {
   @MJI
   public void $init____V(MJIEnv env, int socketRef) {
     try {
-      // Try to set fields normally
+      // Normal initialization
       env.setBooleanField(socketRef, "bound", false);
       env.setBooleanField(socketRef, "connected", false);
       env.setBooleanField(socketRef, "closed", false);
       env.setIntField(socketRef, "timeout", 0);
+
       synchronized (JPF_java_net_Socket.class) {
         env.setIntField(socketRef, "hash", hashCounter++);
       }
 
+      // Ensure lock is never null
       int lock = env.newObject("java.lang.Object");
-      env.setReferenceField(socketRef, "lock", lock);
+      if (lock != MJIEnv.NULL) {
+        env.setReferenceField(socketRef, "lock", lock);
+      }
 
-    }  catch (Exception e) {
+    } catch (Exception e) {
       System.out.println("Socket initialization: using minimal mode with fallback hash storage");
       synchronized (JPF_java_net_Socket.class) {
-        fallbackHashes.put(socketRef, hashCounter++);
+        int initialHash = hashCounter++;
+        fallbackHashes.put(socketRef, initialHash);
+      }
+
+      // Always ensure critical references are non-null
+      try {
+        int fallbackLock = env.newObject("java.lang.Object");
+        if (fallbackLock != MJIEnv.NULL) {
+          env.setReferenceField(socketRef, "lock", fallbackLock);
+        }
+      } catch (Exception lockEx) {
+        System.out.println("WARNING: Could not create lock object: " + lockEx.getMessage());
       }
     }
   }
+
+
+
 
 
 
@@ -439,7 +457,7 @@ public class JPF_java_net_Socket extends NativePeer {
       int currentHash = env.getIntField(socketRef, "hash");
       int newHash;
 
-      switch(type) {
+      switch (type) {
         case STATE_CHANGE:
           newHash = currentHash + 1;
           break;
@@ -456,8 +474,7 @@ public class JPF_java_net_Socket extends NativePeer {
       // Use fallback storage
       int currentHash = fallbackHashes.getOrDefault(socketRef, 0);
       int newHash;
-
-      switch(type) {
+      switch (type) {
         case STATE_CHANGE:
           newHash = currentHash + 1;
           break;
@@ -469,9 +486,20 @@ public class JPF_java_net_Socket extends NativePeer {
       }
 
       fallbackHashes.put(socketRef, newHash);
+
+      // **ADD THIS: Sync fallback back to real field**
+      try {
+        env.setIntField(socketRef, "hash", newHash);
+        System.out.println("DEBUG: Successfully synced hash " + newHash + " to field");
+      } catch (Exception syncEx) {
+        // ignore if field doesn't exist
+        System.out.println("DEBUG: Failed to sync hash to field: " + syncEx.getMessage());
+      }
+
       System.out.println("Fallback hash updated: " + currentHash + " -> " + newHash + " (type: " + type + ", data: " + data + ")");
     }
   }
+
 
   @MJI
   public int getOutputStream____Ljava_io_OutputStream_2(MJIEnv env, int socketRef) {
@@ -514,16 +542,19 @@ public class JPF_java_net_Socket extends NativePeer {
       int currentHash = fallbackHashes.getOrDefault(socketRef, 0);
       int newHash = currentHash ^ data;
       fallbackHashes.put(socketRef, newHash);
-      System.out.println("Fallback hash updated for data write: " + currentHash + " -> " + newHash + " (data: " + data + ")");
 
-      //  to sync back to field periodically
+      // **CRITICAL FIX: Sync fallback back to real field**
       try {
         env.setIntField(socketRef, "hash", newHash);
-        System.out.println("DEBUG: Successfully synced fallback hash to socket field");
+        System.out.println("DEBUG: Successfully synced hash " + newHash + " to field");
       } catch (Exception syncEx) {
+        System.out.println("DEBUG: Failed to sync hash to field: " + syncEx.getMessage());
       }
+
+      System.out.println("Fallback hash updated for data write: " + currentHash + " -> " + newHash + " (data: " + data + ")");
     }
   }
+
 
   //  method to update socket connection status
   private void setConnected(MJIEnv env, int socketRef, boolean connected) {
