@@ -2,9 +2,9 @@ name: Build and Test
 
 on:
   push:
-    branches: [ master, main, gradle-support ]
+    branches: [ master, main, java-11-work ]
   pull_request:
-    branches: [ master, main, gradle-support ]
+    branches: [ master, main, java-11-work ]
 
 jobs:
   build:
