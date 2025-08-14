@@ -4,10 +4,21 @@ import java.io.IOException;
 
 /**
  * Model class for java.net.ServerSocket
- * 
+ *
  * @author Nastaran Shafiei
  */
 public class ServerSocket implements java.io.Closeable {
+
+  static {
+    System.out.println("DEBUG: JPF ServerSocket MODEL CLASS loaded successfully!");
+    try {
+      System.out.println("DEBUG: ServerSocket model class location: " +
+              ServerSocket.class.getProtectionDomain().getCodeSource().getLocation());
+    } catch (UnsupportedOperationException e) {
+      System.out.println("DEBUG: ServerSocket model class location: [JPF environment - getProtectionDomain not supported]");
+    }
+  }
+
 
   /**
    * The implementation of this Socket.
@@ -26,11 +37,12 @@ public class ServerSocket implements java.io.Closeable {
   /**
    * This creates a 'bound' socket which is ready for ServerSocket.accept() to
    * be called.
-   * 
+   *
    * @param port
    *          the local port on which this socket listen for connections
    */
   public ServerSocket (int port) throws IOException {
+    System.out.println("DEBUG: ServerSocket MODEL CLASS constructor called with port: " + port);
     CheckForAddressAlreadyInUse(port);
     SocketImpl.checkPort(port);
     impl = new SocketImpl();
@@ -41,6 +53,7 @@ public class ServerSocket implements java.io.Closeable {
   private native void CheckForAddressAlreadyInUse (int port);
 
   void setBound () {
+    System.out.println("DEBUG: ServerSocket MODEL CLASS setBound() called");
     this.bound = true;
   }
 
@@ -49,9 +62,9 @@ public class ServerSocket implements java.io.Closeable {
    * ServerSocket.bind() before ServerSocket.accept() is invoked
    */
   public ServerSocket () throws IOException {
-
+    System.out.println("DEBUG: ServerSocket MODEL CLASS default constructor called");
   }
-  
+
   private Object lock = new Object();
 
   private Socket acceptedSocket;
@@ -65,11 +78,12 @@ public class ServerSocket implements java.io.Closeable {
    * socket which represents its end of the connection
    */
   public Socket accept () throws IOException {
+    System.out.println("DEBUG: ServerSocket MODEL CLASS accept() called");
     if (isClosed()) {
       throw new SocketException("Socket is closed");
-    } 
+    }
     // TODO: check for the "unbound" state
-    
+
     // The IO buffers of this socket are shared natively with the client socket
     // at the other end
     acceptedSocket = new Socket();
@@ -87,14 +101,16 @@ public class ServerSocket implements java.io.Closeable {
   // TODO: Throws IOException, if an I/O error occurs when closing the socket
   @Override
   public native synchronized void close ();
-  
+
   private int timeout;
   public void setSoTimeout(int timeout) {
+    System.out.println("DEBUG: ServerSocket MODEL CLASS setSoTimeout() called with timeout: " + timeout);
     this.timeout = timeout;
   }
-  
+
   @Override
   protected void finalize() throws Throwable{
+    System.out.println("DEBUG: ServerSocket MODEL CLASS finalize() called");
     close();
   }
 }
