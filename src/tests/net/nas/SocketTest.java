@@ -173,19 +173,4 @@ public class SocketTest extends TestNasJPF {
     }
   }
 
-  @Test
-  public void debugModelClassLoading() {
-    try {
-      Socket socket = new Socket();
-      Field hashField = socket.getClass().getDeclaredField("hash");
-      System.out.println("SUCCESS: Hash field exists in Socket model class!");
-
-      ServerSocket serverSocket = new ServerSocket();
-      System.out.println("SUCCESS: ServerSocket model class instantiated!");
-
-    } catch (Exception e) {
-      System.out.println("Model classes not loading properly: " + e.getMessage());
-    }
-  }
-
 }
