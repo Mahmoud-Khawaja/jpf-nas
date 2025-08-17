@@ -116,12 +116,7 @@ tasks.register('modelJar', Jar) {
     dependsOn tasks.named('compileModelClasses')
     dependsOn tasks.named('compileJava')
     archiveBaseName = 'jpf-nas-classes'
-
     from("$buildDir/classes/modules")
-
-    from("$buildDir/classes/java/main") {
-        include "nas/java/net/**"
-    }
 
     from("$buildDir/classes/java/main") {
         include "nas/util/test/TestNasJPF.class"
@@ -134,7 +129,6 @@ tasks.register('modelJar', Jar) {
         )
     }
 }
-
 
 // --- Java Compile Options ---
 tasks.withType(JavaCompile).configureEach {
@@ -152,6 +146,28 @@ tasks.withType(JavaCompile).configureEach {
     ]
 
 }
+
+tasks.register('compareMetaInf', Task) {
+    doLast {
+        def jpfCoreJar = jpf.Jar.getFullPath()
+        def jpfCoreDir = new File(jpfCoreJar).parent
+        def jpfCoreClassesJar = "${jpfCoreDir}/jpf-classes.jar"
+        def jpfNasClassesJar = "${buildDir}/libs/jpf-nas-classes.jar"
+
+        println "=== JPF-Core META-INF ==="
+        exec {
+            commandLine 'jar', 'tf', jpfCoreClassesJar
+            standardOutput = System.out
+        }
+
+        println "\n=== JPF-NAS META-INF ==="
+        exec {
+            commandLine 'jar', 'tf', jpfNasClassesJar
+            standardOutput = System.out
+        }
+    }
+}
+
 
 test {
     dependsOn tasks.named('jar')
@@ -174,16 +190,6 @@ test {
     forkEvery = 1
 }
 
-jar {
-    dependsOn tasks.named('modelJar')
-    archiveBaseName = 'jpf-nas'
-    from sourceSets.main.output
-    manifest {
-        attributes(
-                'Implementation-Title': 'Java Pathfinder NAS extension',
-        )
-    }
-}
 
 artifacts {
     archives tasks.named('jar')
